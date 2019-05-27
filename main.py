@@ -27,7 +27,7 @@ def BMCMC(n, ys, fs, verbose = None):
     plt.ylabel('theta')
     plt.xlabel('iteration')
     if(verbose is not None):
-        plt.savefig(f"theta convergence_{verbose}.png")
+        plt.savefig(f"theta_convergence_{verbose}.png")
     plt.close()
     
     ret = plt.hist(theta,50)
@@ -35,7 +35,7 @@ def BMCMC(n, ys, fs, verbose = None):
     plt.hist(theta[len(theta)//10:],50)
     plt.ylabel('theta')
     if(verbose is not None):
-        plt.savefig(f"theta distribution_{verbose}.png")
+        plt.savefig(f"theta_distribution_{verbose}.png")
     plt.close()
     return theta, ret[0], ret[1]
     
@@ -92,14 +92,12 @@ def getExplanatoryVar(df):
     creat   = df['creat'].values.tolist()
     mspike  = df['mspike'].values.tolist()    
     
-    return np.asarray([np.asarray([int(a),0 if s=='F' else 1,int(h),int(c),int(m)]) for (a,s,h,c,m) in zip(age,sex,hgb,creat,mspike)])
+    return np.asarray([np.asarray([float(a),0.0 if s=='F' else 1.0,float(h),float(c),float(m)]) for (a,s,h,c,m) in zip(age,sex,hgb,creat,mspike)])
     
-def transformToUniform(df,cens1,cens2):
+def transformToUniform(df,cens):
     df = df.copy()
-    df = df[(df.ptime >= cens1) | (df.pstat == 1)]
-    df.loc[(df.ptime >= cens1) | (df.pstat == 0), 'ptime'] = cens1
-    df = df[(df.futime >= cens2) | (df.death == 1)]
-    df.loc[(df.futime >= cens2) | (df.death == 0), 'futime'] = cens2
+    df = df[(df.futime >= cens) | (df.death == 1)]
+    df.loc[(df.futime >= cens) & (df.death == 0), 'futime'] = cens
     
     return df
     
@@ -157,17 +155,26 @@ data = pd.read_csv("mgus2.csv")
 data = data.drop("useless", axis=1)
 data = data.drop("id", axis=1)
 data = data.dropna(axis=0, how='any')
-ys = data['futime'].values
-fs = data['death'].values
+
 xs = getExplanatoryVar(data)
+
 
 #evaluate
 with open("results.txt", 'w+', encoding='utf-8') as out:
-    thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "real data")
+    ys = data['futime'].values
+    fs = data['death'].values
+    thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "real_data")
     print("Real data", file=out)
     print("####################################", file=out)
     print("Mean theta :"+str(np.mean(thetas)), file=out)
-    
+        
+    dataUnif = transformToUniform(data,90)
+    ys = dataUnif['futime'].values
+    fs = dataUnif['death'].values
+    thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "uniform real_data")
+    print("Uniform real data", file=out)
+    print("####################################", file=out)
+    print("Mean theta :"+str(np.mean(thetas)), file=out)
     
     ys, fs = genUniCensData(5000, 15, 100)
     thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "low censoring")
@@ -186,5 +193,5 @@ with open("results.txt", 'w+', encoding='utf-8') as out:
     print("High censoring", file=out)
     print("####################################", file=out)
     print("Mean theta :"+str(np.mean(thetas)), file=out)   
-evaluateBMCMC(True)
-evaluateBMCMC(False)
+# evaluateBMCMC(True)
+# evaluateBMCMC(False)
