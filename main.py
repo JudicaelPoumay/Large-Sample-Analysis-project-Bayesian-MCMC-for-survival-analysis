@@ -64,7 +64,7 @@ def genRdCensData(n, cens, expt):
     
 def probExp(y, f, param):
     if(f == 1):
-        return y*math.exp(-y*param)
+        return param*math.exp(-y*param)
     else:
         return math.exp(-y*param)
     
