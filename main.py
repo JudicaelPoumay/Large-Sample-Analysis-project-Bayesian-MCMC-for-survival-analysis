@@ -124,32 +124,6 @@ def evaluateBMCMC(unif):
     plt.savefig(f"iteration_{label}.png")
     plt.close()
 
-    #analyze effect of censoring on BMCMC performance
-    ILL = []
-    for i in range(0,500,10):
-        ys, fs = gen(3000, i, 100)
-        thetas, binNb, binBound = BMCMC(500, ys,fs)
-        ILL.append(integratedLogLikelyhood(ys, fs, thetas, binNb, binBound))
-        
-    plt.plot(range(0,500,10),ILL)
-    plt.ylabel('integrated LogLikelyhood')
-    plt.xlabel('right censoring on data')
-    plt.savefig(f"censoring_{label}.png")
-    plt.close()
-
-    #analyze effect of data size on BMCMC performance
-    ILL = []
-    for i in range(100,4000,100):
-        ys, fs = gen(i, 30, 100)
-        thetas, binNb, binBound = BMCMC(500, ys,fs)
-        ILL.append(integratedLogLikelyhood(ys, fs, thetas, binNb, binBound))
-        
-    plt.plot(range(100,4000,100),ILL)
-    plt.ylabel('integrated LogLikelyhood')
-    plt.xlabel('data size')
-    plt.savefig(f"size_{label}.png")
-    plt.close()
-    
 #load data and drop na
 data = pd.read_csv("mgus2.csv")
 data = data.drop("useless", axis=1)
