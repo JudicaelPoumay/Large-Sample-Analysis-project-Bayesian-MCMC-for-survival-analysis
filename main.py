@@ -4,6 +4,9 @@ import math
 import matplotlib.pyplot as plt
 from scipy.stats import gamma
 
+#------------------------------
+#Bayesian MCMC algo
+#------------------------------
 def BMCMC(n, ys, fs, verbose = None):
     #init augmented data array
     ysAug   = np.copy(ys)
@@ -39,11 +42,14 @@ def BMCMC(n, ys, fs, verbose = None):
     plt.close()
     return theta, ret[0], ret[1]
     
+#------------------------------
+#Data generation    
+#------------------------------
 def genUniCensData(n, cens, expt):
     print("gen data")
     ys      = np.random.exponential(expt,n)
     fs      = np.zeros_like(ys)
-    fs[(ys < cens)] = 1
+    fs[(ys < cens)]  = 1
     ys[(ys >= cens)] = cens
     print(np.sum(ys >= cens))
     print(np.mean(ys))
@@ -53,15 +59,18 @@ def genUniCensData(n, cens, expt):
 def genRdCensData(n, cens, expt):
     print("gen data")
     ys      = np.random.exponential(expt,n)
-    censs    = np.random.exponential(cens,n)
+    censs   = np.random.exponential(cens,n)
     fs      = np.zeros_like(ys)
     fs[(ys < censs)] = 1
-    ys[(ys >= censs)] = censs[fs == 0] 
+    ys[(ys >= censs)]= censs[fs == 0] 
     print(np.sum(ys >= censs))
     print(np.mean(ys))
     
     return ys, fs
     
+#------------------------------
+#Integrated likelihood computation   
+#------------------------------
 def probExp(y, f, param):
     if(f == 1):
         return param*math.exp(-y*param)
@@ -85,6 +94,9 @@ def integratedLogLikelyhood(ys, fs, thethas, binNb, binBound):
         res += loglikelyhood(ys, fs, theta)*probTheta(theta, binNb, binBound)
     return res
 
+#------------------------------
+#Utils
+#------------------------------
 def getExplanatoryVar(df):
     age     = df['age'].values.tolist()
     sex     = df['sex'].values.tolist()
@@ -101,6 +113,9 @@ def transformToUniform(df,cens):
     
     return df
     
+#------------------------------
+#Evaluation
+#------------------------------
 def evaluateBMCMC(unif):   
     #select generation method
     label = ""
@@ -123,6 +138,10 @@ def evaluateBMCMC(unif):
     plt.xlabel('number of iteration of B-MCMC')
     plt.savefig(f"iteration_{label}.png")
     plt.close()
+    
+#------------------------------
+#MAIN
+#------------------------------
 
 #load data and drop na
 data = pd.read_csv("mgus2.csv")
@@ -135,6 +154,7 @@ xs = getExplanatoryVar(data)
 
 #evaluate
 with open("results.txt", 'w+', encoding='utf-8') as out:
+    #TEST REAL DATA 
     ys = data['futime'].values
     fs = data['death'].values
     thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "real_data")
@@ -150,12 +170,27 @@ with open("results.txt", 'w+', encoding='utf-8') as out:
     print("####################################", file=out)
     print("Mean theta :"+str(np.mean(thetas)), file=out)
     
-    ys, fs = genUniCensData(5000, 15, 100)
-    thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "low censoring")
-    print("Low censoring", file=out)
+    
+    # TEST DATA SIZE
+    ys, fs = genUniCensData(50, 30, 100)
+    thetas, binNb, binBound = BMCMC(5000, ys,fs,verbose = "low data")
+    print("Low data", file=out)
     print("####################################", file=out)
     print("Mean theta :"+str(np.mean(thetas)), file=out)
     
+    ys, fs = genUniCensData(500, 30, 100)
+    thetas, binNb, binBound = BMCMC(5000, ys,fs,verbose = "mid data")
+    print("mid data", file=out)
+    print("####################################", file=out)
+    print("Mean theta :"+str(np.mean(thetas)), file=out)
+    
+    ys, fs = genUniCensData(5000, 30, 100)
+    thetas, binNb, binBound = BMCMC(5000, ys,fs,verbose = "high data")
+    print("high data", file=out)
+    print("####################################", file=out)
+    print("Mean theta :"+str(np.mean(thetas)), file=out)
+    
+    # TEST UNIFORM CENSORING    
     ys, fs = genUniCensData(5000, 70, 100)
     thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "mid censoring")
     print("Mid censoring", file=out)
@@ -167,5 +202,24 @@ with open("results.txt", 'w+', encoding='utf-8') as out:
     print("High censoring", file=out)
     print("####################################", file=out)
     print("Mean theta :"+str(np.mean(thetas)), file=out)   
-# evaluateBMCMC(True)
-# evaluateBMCMC(False)
+    
+    # TEST RANDOM CENSORING    
+    ys, fs = genRdCensData(5000, 15, 100)
+    thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "RD low censoring")
+    print("RD Low censoring", file=out)
+    print("####################################", file=out)
+    print("Mean theta :"+str(np.mean(thetas)), file=out)
+    
+    ys, fs = genRdCensData(5000, 70, 100)
+    thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "RD mid censoring")
+    print("RD Mid censoring", file=out)
+    print("####################################", file=out)
+    print("Mean theta :"+str(np.mean(thetas)), file=out)
+    
+    ys, fs = genRdCensData(5000, 200, 100)
+    thetas, binNb, binBound = BMCMC(500, ys,fs,verbose = "RD high censoring")
+    print("RD High censoring", file=out)
+    print("####################################", file=out)
+    print("Mean theta :"+str(np.mean(thetas)), file=out)   
+evaluateBMCMC(True)
+evaluateBMCMC(False)
